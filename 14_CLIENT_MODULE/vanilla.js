@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 
 // DOM element references
 const elements = {
+  leaderboard: $("leaderboard"),
   gameContainer: $("gameContainer"),
   gamePreview: $("gamePreview"),
   main: $("main"),
@@ -45,22 +46,23 @@ const grid = {
 
 // Game state
 const gameState = {
-  dogKilled: 0,
-  dogLived: 1,
   igniteTime: 3000,
   timer: 120,
-  lives: 3,
   isPlaying: false,
   playerLeft: grid.cell,
   playerTop: grid.cell,
   cellSize: grid.cell,
-  ammunition: 100,
+  lives: 3,
+  dogLived: 1,
+  dogKilled: 0,
+  ammunition: 10,
   wallsDestroyed: 0,
   iceCubes: 0,
   isOver: false,
   playerData: {},
   walls: [],
   dogs: [],
+  powerUps: [],
   grid,
   isFrozen: false,
   freezeTimeout: null,
@@ -69,8 +71,42 @@ const gameState = {
 };
 
 const CONFIG = {
+  powerUpData: {
+    bomb: {
+      img: "./Images/tnt.png",
+      attr: () => {
+        gameState.ammunition++;
+        elements.ammunition.textContent = gameState.ammunition;
+      },
+    },
+    ice: {
+      img: "./Images/ice.png",
+      attr: () => {
+        gameState.iceCubes++;
+        elements.iceCube.textContent = gameState.iceCubes;
+        gameState.isFrozen = true;
+        elements.player.style.opacity = "0.5";
+        elements.player.classList.add("frozen");
+        if (gameState.freezeTimeout) {
+          clearTimeout(gameState.freezeTimeout);
+        }
+        gameState.freezeTimeout = setTimeout(() => {
+          gameState.isFrozen = false;
+          elements.player.style.opacity = "1";
+          elements.player.classList.remove("frozen");
+          gameState.freezeTimeout = null;
+        }, 5000);
+      },
+    },
+    heart: {
+      img: "./Images/heart.png",
+      attr: () => gameFunction.damagePlayer(),
+    },
+  },
   WALL_COUNT: { 1: 15, 2: 25, 3: 35 },
   DOG_COUNT: { 1: 1, 2: 2, 3: 3 },
+  AMMUNITION: { 1: 50, 2: 25, 3: 15 },
+  LEVEL_NAME: { 1: "Easy", 2: "Medium", 3: "Hard" },
 };
 
 // Modal system
@@ -124,6 +160,129 @@ const modal = {
 
 // Helper functions
 const helpers = {
+  resetAll() {
+    elements.gameContainer.classList.add("hidden");
+    elements.main.classList.remove("hidden");
+
+    elements.username.value = "";
+    elements.level.value = "";
+
+    localStorage.clear();
+    gameState.isPlaying = false;
+  },
+  saveToLeaderboard() {
+    const playerData = {
+      username: gameState.playerData.username,
+      level: gameState.playerData.level,
+      time: gameState.timer, // Use remaining time
+      lives: gameState.lives,
+      dogKilled: gameState.dogKilled,
+      ammunition: gameState.ammunition,
+      wall: gameState.wallsDestroyed,
+      iceCubes: gameState.iceCubes,
+      score:
+        gameState.wallsDestroyed * 10 +
+        gameState.iceCubes * 5 +
+        gameState.dogKilled * 100, // Calculate score
+    };
+    // Retrieve existing leaderboard or initialize an empty array
+    let leaderboard = localStorage.getItem("data-leaderboard");
+    leaderboard = leaderboard ? JSON.parse(leaderboard) : [];
+
+    // Add new entry
+    leaderboard.push(playerData);
+
+    // Save back to localStorage
+    localStorage.setItem("data-leaderboard", JSON.stringify(leaderboard));
+
+    setTimeout(() => {
+      this.showLeaderboard();
+    }, 100);
+  },
+
+  showLeaderboard() {
+    modal.hide();
+    // Retrieve leaderboard data
+    let leaderboard = localStorage.getItem("data-leaderboard");
+    leaderboard = leaderboard ? JSON.parse(leaderboard) : [];
+    console.log("leaderboard", leaderboard);
+    // Sort leaderboard by score (descending)
+    leaderboard.sort((a, b) => b.score - a.score);
+
+    // Generate table HTML
+    let tableContent = `
+      <table style="width: 100%; border-collapse: collapse; text-align: center;">
+        <thead>
+          <tr style="background-color: #f2f2f2;">
+            <th style="padding: 8px; border: 1px solid #ddd;">No</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Username</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Level</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Time Left</th>
+            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/dog_down.png" style="width:50px; height:50px" alt="dog_killed" /></th>
+            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/wall_crack.png" style="width:50px; height:50px" alt="wall_crack" /></th>
+            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/tnt.png" style="width:50px; height:50px" alt="tnt" /></th>
+            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/ice.png" style="width:50px; height:50px" alt="ice_cube" /></th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    if (leaderboard.length === 0) {
+      tableContent += `
+        <tr>
+          <td colspan="8" style="padding: 8px; text-align: center; border: 1px solid #ddd;">
+            No leaderboard data available.
+          </td>
+        </tr>
+      `;
+    } else {
+      leaderboard.forEach((entry, index) => {
+        tableContent += `
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.username
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              CONFIG.LEVEL_NAME[entry.level]
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.time
+            }s</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.dogKilled
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${entry.wall}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.ammunition
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.iceCubes
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${
+              entry.score
+            }</td>
+          </tr>
+        `;
+      });
+    }
+
+    tableContent += `
+        </tbody>
+      </table>
+      <div style="margin-top: 20px; text-align: center;">
+        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Play Again</button>
+        <button onclick="helpers.resetAll()" style="padding: 10px 20px; cursor: pointer; margin-left: 10px;">Reset</button>
+      </div>
+    `;
+    // Show leaderboard in modal
+    elements.gameContainer.classList.add("hidden");
+    elements.main.classList.add("hidden");
+    console.log(elements.leaderboard);
+    elements.leaderboard.classList.remove("hidden");
+    elements.leaderboard.innerHTML = tableContent;
+  },
   startGame() {
     if (gameState.isLoading || gameState.isPlaying) return;
 
@@ -593,6 +752,8 @@ const gameFunction = {
     // Initialize game elements
     elements.playerName.textContent = gameState.playerData.username;
     elements.time.textContent = gameState.timer;
+    gameState.ammunition = CONFIG.AMMUNITION[gameState.playerData.level];
+
     elements.ammunition.textContent = gameState.ammunition;
     elements.wallCrack.textContent = gameState.wallsDestroyed;
     elements.iceCube.textContent = gameState.iceCubes;
@@ -700,7 +861,6 @@ const gameFunction = {
       this.damagePlayer();
     }
 
-    // Check if explosion hit a wall
     this.checkIsDestroyed(leftPosition, topPosition);
 
     // Remove explosion after a short delay
@@ -718,19 +878,12 @@ const gameFunction = {
       const wall = gameState.walls[i];
       if (wall.left === leftPosition && wall.top === topPosition) {
         helpers.playSound("brick_break");
-        // Remove wall from DOM
         if (elements.gamePreview.contains(wall.element)) {
           elements.gamePreview.removeChild(wall.element);
         }
-
-        // Remove wall from game state
         gameState.walls.splice(i, 1);
-
-        // Update wall destruction counter
         gameState.wallsDestroyed++;
         elements.wallCrack.textContent = gameState.wallsDestroyed;
-
-        // Chance to drop power-up
         if (Math.random() < 0.3) {
           this.dropPowerUp(leftPosition, topPosition);
         }
@@ -750,17 +903,30 @@ const gameFunction = {
         gameState.dogKilled++;
         gameState.dogLived--;
         elements.dogKilled.textContent = gameState.dogKilled;
-        console.log("gameState.dogLived", gameState.dogLived);
-        console.log("gameState.dogKilled", gameState.dogKilled);
         if (gameState.dogLived === 0) {
           this.gameOver("You Won!");
         }
         break;
       }
     }
+
+    // Check for power-ups
+    for (let i = 0; i < gameState.powerUps.length; i++) {
+      const powerUp = gameState.powerUps[i];
+      if (
+        powerUp.left === leftPosition &&
+        powerUp.top === topPosition &&
+        Date.now() - powerUp.creationTime >= 2000
+      ) {
+        if (elements.gamePreview.contains(powerUp.element)) {
+          elements.gamePreview.removeChild(powerUp.element);
+        }
+        gameState.powerUps.splice(i, 1);
+        break;
+      }
+    }
   },
 
-  // Drop a power-up item at specified position
   dropPowerUp(leftPosition, topPosition) {
     const rand = Math.random();
     let powerUpType = null;
@@ -772,72 +938,66 @@ const gameFunction = {
 
     const powerUp = document.createElement("div");
     powerUp.style.left = `${leftPosition}px`;
-    powerUp.style.top = `${topPosition}px`;
+    powerUp.style.top = `${topPosition}px`; // Fixed typo
     powerUp.classList.add("powerUps");
-
-    const powerUpData = {
-      bomb: {
-        img: "./Images/tnt.png",
-        attr: () => {
-          gameState.ammunition++;
-          elements.ammunition.textContent = gameState.ammunition;
-        },
-      },
-      ice: {
-        img: "./Images/ice.png",
-        attr: () => {
-          gameState.iceCubes++;
-          elements.iceCube.textContent = gameState.iceCubes;
-          gameState.isFrozen = true;
-          elements.player.style.opacity = "0.5";
-          elements.player.classList.add("frozen");
-          if (gameState.freezeTimeout) {
-            clearTimeout(gameState.freezeTimeout);
-          }
-          gameState.freezeTimeout = setTimeout(() => {
-            gameState.isFrozen = false;
-            elements.player.style.opacity = "1";
-            elements.player.classList.remove("frozen");
-            gameState.freezeTimeout = null;
-          }, 5000);
-        },
-      },
-      heart: {
-        img: "./Images/heart.png",
-        attr: () => this.damagePlayer(),
-      },
-    };
-
-    powerUp.style.background = `url('${powerUpData[powerUpType].img}')`;
+    const creationTime = Date.now();
+    powerUp.setAttribute("data-creation-time", creationTime);
+    powerUp.style.background = `url('${CONFIG.powerUpData[powerUpType].img}')`;
     powerUp.setAttribute("data-type", powerUpType);
     elements.gamePreview.appendChild(powerUp);
 
-    const checkInterval = setInterval(() => {
-      if (
-        gameState.playerLeft === leftPosition &&
-        gameState.playerTop === topPosition
-      ) {
-        elements.player.classList.add("playerPowerUp");
-        powerUp.classList.add("powerUpCollected");
-        helpers.playSound("pick");
-
-        setTimeout(() => {
-          elements.player.classList.remove("playerPowerUp");
-          powerUpData[powerUpType].attr();
-          if (elements.gamePreview.contains(powerUp)) {
-            elements.gamePreview.removeChild(powerUp);
-          }
-        }, 500); // Match animation duration
-        clearInterval(checkInterval);
-      }
-    }, 100);
+    // Add to gameState.powerUps
+    gameState.powerUps.push({
+      element: powerUp,
+      left: leftPosition,
+      top: topPosition,
+      type: powerUpType,
+      creationTime: creationTime,
+    });
+    this.checkPowerUpInterval();
 
     setTimeout(() => {
-      if (elements.gamePreview.contains(powerUp)) {
-        elements.gamePreview.removeChild(powerUp);
-        clearInterval(checkInterval);
+      const index = gameState.powerUps.findIndex((p) => p.element === powerUp);
+      if (index !== -1) {
+        if (elements.gamePreview.contains(powerUp)) {
+          elements.gamePreview.removeChild(powerUp);
+        }
+        gameState.powerUps.splice(index, 1);
       }
     }, 10000);
+  },
+
+  checkPowerUpInterval() {
+    const checkInterval = setInterval(() => {
+      if (gameState.isOver || !gameState.isPlaying) {
+        clearInterval(checkInterval);
+        return;
+      }
+
+      for (let i = gameState.powerUps.length - 1; i >= 0; i--) {
+        const powerUp = gameState.powerUps[i];
+        if (powerUp.isCollected) continue;
+        if (
+          gameState.playerLeft === powerUp.left &&
+          gameState.playerTop === powerUp.top &&
+          elements.gamePreview.contains(powerUp.element)
+        ) {
+          elements.player.classList.add("playerPowerUp");
+          powerUp.element.classList.add("powerUpCollected");
+          helpers.playSound("pick");
+          powerUp.isCollected = true;
+
+          setTimeout(() => {
+            elements.player.classList.remove("playerPowerUp");
+            CONFIG.powerUpData[powerUp.type].attr();
+            if (elements.gamePreview.contains(powerUp.element)) {
+              elements.gamePreview.removeChild(powerUp.element);
+            }
+            gameState.powerUps.splice(i, 1);
+          }, 500);
+        }
+      }
+    }, 100);
   },
 
   // Damage the player when hit by explosion
@@ -908,13 +1068,8 @@ const gameFunction = {
       `
       <div class="gameOverView">
         <h3>${message}</h3>
-        <div class="stat-line"><span>Player</span><span>: ${gameState.playerData.username}</span></div>
-        <div class="stat-line"><span>Dog Killed</span><span>: ${gameState.dogKilled}</span></div>
-        <div class="stat-line"><span>Walls Destroyed</span><span>: ${gameState.wallsDestroyed}</span></div>
-        <div class="stat-line"><span>Remaining Ammunition</span><span>: ${gameState.ammunition}</span></div>
-        <div class="stat-line"><span>Ice Cubes Collected</span><span>: ${gameState.iceCubes}</span></div>
-        <div class="stat-line"><span>Final Score</span><span>: ${score}</span></div>
-        <button onclick="location.reload()">Play Again</button>
+        <button onclick="helpers.showLeaderboard()">View Leaderboard</button>
+        <button onclick="helpers.saveToLeaderboard()">Save</button>
       </div>
       `
     );

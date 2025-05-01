@@ -140,7 +140,6 @@ body {
   height: 500px;
   margin-right: 5rem;
   display: grid;
-  border: 1px solid blue;
   grid-template-columns: repeat(11, 55px);
   grid-template-rows: repeat(9, 55px);
   justify-content: center;
@@ -152,7 +151,6 @@ body {
   width: 55px;
   height: 55px;
   z-index: 10;
-  border: 1px solid red;
 }
 
 /* Game Elements */
@@ -166,7 +164,6 @@ body {
   background-size: contain !important;
   background-repeat: no-repeat !important;
   transition: all 0.2s ease;
-  border: 1px solid yellow;
 }
 
 .bomb {
@@ -212,7 +209,6 @@ body {
   background-position: center !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
-  border: 1px solid black;
 }
 
 .dog {
