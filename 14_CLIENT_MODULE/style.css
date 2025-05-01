@@ -7,14 +7,6 @@ body {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
-#sidebar div {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
 #sidebar * {
   font-weight: bold;
   font-size: xx-large;
@@ -26,6 +18,7 @@ body {
   max-height: 100vh;
   overflow: hidden;
   position: relative;
+  background-color: black;
 }
 
 .hidden {
@@ -45,6 +38,7 @@ body {
   margin: auto;
   gap: 1rem;
   padding: 2rem;
+  background-color: ghostwhite;
 }
 
 .img-container {
@@ -81,7 +75,8 @@ body {
   height: 50px;
 }
 
-#main div {
+#main div,
+.btn-container {
   display: flex;
   width: 100%;
   flex-direction: row;
@@ -106,16 +101,27 @@ body {
   padding: 1rem;
   width: 100%;
   border: none;
-  background: black;
+  background-color: black;
   font-weight: bold;
   color: white;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn:hover {
-  background: #333;
+  filter: brightness(0.6);
+}
+
+button:active {
+  scale: 0.9;
+}
+
+.btn-red {
+  background-color: #cb3000;
+}
+.btn-blue {
+  background-color: rgb(53, 53, 236);
 }
 
 /* Game Container */
@@ -228,22 +234,18 @@ body {
   flex-direction: column;
   right: 0;
   top: 0;
-  width: 45%;
+  width: 30%;
+  border-radius: 10px;
   background-color: rgb(53, 53, 53);
   height: 100%;
   padding: 3rem;
   z-index: 8;
 }
 
-#sidebar div img {
-  width: 40px;
-  height: 40px;
-}
-
 #heartContainer {
-  display: flex;
+  display: flex !important;
   flex-direction: row;
-  justify-content: center;
+  justify-content: center !important;
   gap: 1rem;
   align-items: center;
   margin: 1rem 0;
@@ -258,6 +260,40 @@ body {
   background-position: center !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
+}
+
+#sidebar div {
+  display: grid;
+  grid-template-columns: 20% 15% 65%;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+#sidebar div img {
+  width: 50px;
+  height: 50px;
+}
+#sidebar .text-logo {
+  scale: 1.5;
+  margin-bottom: 3rem;
+}
+#sidebar .text-logo .bomb-logo {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.nav-elements-parent {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem;
+}
+.nav-elements {
+  text-align: left !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 /* Animations */
@@ -348,13 +384,13 @@ body {
 
 /* Game Over     */
 .gameOverView {
-  background: #222;
   color: #eee;
-  padding: 25px;
-  border-radius: 10px;
   width: max-content;
   margin: 40px auto;
   font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 h3 {
@@ -370,23 +406,8 @@ h3 {
   margin: 5px 0;
 }
 
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
+.btnClose {
   background: #cb3000;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-button:hover {
-  background: #e64500;
-}
-
-button:active {
-  scale: 0.9;
 }
 
 /* CountDown */
@@ -430,4 +451,38 @@ button:active {
   width: 25px;
   height: 25px;
   border-radius: 8px;
+}
+
+/* Leaderboard */
+
+#leaderboard {
+  display: flex;
+  flex-direction: column;
+  padding: 5rem;
+  width: 100%;
+  height: 100vh;
+  background-color: #222;
+  justify-content: center;
+}
+#leaderboard * {
+  color: white;
+  text-align: center;
+}
+#leaderboard h1 {
+  margin-bottom: 3rem;
+  font-size: 3rem;
+}
+#leaderboard table {
+  border-collapse: collapse;
+  width: 100%;
+  border-color: white;
+  margin-bottom: 3rem;
+}
+
+#leaderboard td {
+  border-top: 1px solid white;
+  border-bottom: 1px solid white;
+  border-left: none;
+  border-right: none;
+  padding: 8px;
 }

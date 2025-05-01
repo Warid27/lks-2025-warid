@@ -68,6 +68,7 @@ const gameState = {
   freezeTimeout: null,
   isLoading: false,
   countTime: 3,
+  isPaused: false,
 };
 
 const CONFIG = {
@@ -134,6 +135,7 @@ const modal = {
 
       const closeButton = document.createElement("button");
       closeButton.textContent = "X";
+      closeButton.classList.add("btn");
       closeButton.classList.add("btnClose");
       closeButton.onclick = this.hide;
 
@@ -160,6 +162,99 @@ const modal = {
 
 // Helper functions
 const helpers = {
+  formatTime(seconds) {
+    const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const secs = String(seconds % 60).padStart(2, "0");
+    return `${mins}:${secs}`;
+  },
+  pauseGame() {
+    if (gameState.isOver || !gameState.isPlaying) return; // Ignore if game is over or not playing
+
+    gameState.isPaused = !gameState.isPaused;
+
+    if (gameState.isPaused) {
+      // Show pause modal
+      modal.show(
+        "Game Paused",
+        `
+        <div class="pause-menu">
+          <h3>Game Paused</h3>
+          <div class="btn-container">
+            <button onclick="helpers.pauseGame()" class="btn btn-green">Resume</button>
+            <button onclick="window.location.reload()" class="btn btn-red">Quit</button>
+          </div>
+        </div>
+        `
+      );
+    } else {
+      // Hide pause modal when resuming
+      modal.hide();
+    }
+  },
+  resetGame() {
+    // Remove all dogs from DOM and clear array
+    gameState.dogs.forEach((dog) => {
+      if (elements.gamePreview.contains(dog.element)) {
+        elements.gamePreview.removeChild(dog.element);
+      }
+    });
+    gameState.dogs = [];
+
+    // Remove all walls from DOM and clear array
+    gameState.walls.forEach((wall) => {
+      if (elements.gamePreview.contains(wall.element)) {
+        elements.gamePreview.removeChild(wall.element);
+      }
+    });
+    gameState.walls = [];
+
+    // Remove all power-ups from DOM and clear array
+    gameState.powerUps.forEach((powerUp) => {
+      if (elements.gamePreview.contains(powerUp.element)) {
+        elements.gamePreview.removeChild(powerUp.element);
+      }
+    });
+    gameState.powerUps = [];
+
+    // Reset game state
+    gameState.igniteTime = 3000;
+    gameState.timer = 120;
+    gameState.isPlaying = false;
+    gameState.playerLeft = grid.cell;
+    gameState.playerTop = grid.cell;
+    gameState.cellSize = grid.cell;
+    gameState.lives = 3;
+    gameState.dogLived = 1;
+    gameState.dogKilled = 0;
+    gameState.ammunition = 10;
+    gameState.wallsDestroyed = 0;
+    gameState.iceCubes = 0;
+    gameState.isOver = false;
+    gameState.playerData = {};
+    gameState.isFrozen = false;
+    gameState.freezeTimeout = null;
+    gameState.isLoading = false;
+    gameState.countTime = 3;
+    gameState.isPaused = false;
+
+    // Reset heart UI
+    for (let i = 0; i < 3; i++) {
+      elements.hearts[i].style.background = "url('./Images/heart_live.png')";
+      elements.hearts[i].style.backgroundPosition = "center";
+      elements.hearts[i].style.backgroundSize = "contain";
+      elements.hearts[i].style.backgroundRepeat = "no-repeat";
+    }
+
+    // Reset UI elements
+    elements.wallCrack.textContent = gameState.wallsDestroyed;
+    elements.iceCube.textContent = gameState.iceCubes;
+    elements.dogKilled.textContent = gameState.dogKilled;
+    elements.ammunition.textContent = gameState.ammunition;
+    elements.time.textContent = this.formatTime(gameState.timer);
+
+    // Start the game
+    this.startGame();
+  },
   resetAll() {
     elements.gameContainer.classList.add("hidden");
     elements.main.classList.remove("hidden");
@@ -205,64 +300,51 @@ const helpers = {
     // Retrieve leaderboard data
     let leaderboard = localStorage.getItem("data-leaderboard");
     leaderboard = leaderboard ? JSON.parse(leaderboard) : [];
-    console.log("leaderboard", leaderboard);
+
     // Sort leaderboard by score (descending)
-    leaderboard.sort((a, b) => b.score - a.score);
+    const top10 = leaderboard.sort((a, b) => b.score - a.score).slice(0, 10);
 
     // Generate table HTML
     let tableContent = `
-      <table style="width: 100%; border-collapse: collapse; text-align: center;">
+    <h1>Leaderboards</h1>
+      <table>
         <thead>
-          <tr style="background-color: #f2f2f2;">
-            <th style="padding: 8px; border: 1px solid #ddd;">No</th>
-            <th style="padding: 8px; border: 1px solid #ddd;">Username</th>
-            <th style="padding: 8px; border: 1px solid #ddd;">Level</th>
-            <th style="padding: 8px; border: 1px solid #ddd;">Time Left</th>
-            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/dog_down.png" style="width:50px; height:50px" alt="dog_killed" /></th>
-            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/wall_crack.png" style="width:50px; height:50px" alt="wall_crack" /></th>
-            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/tnt.png" style="width:50px; height:50px" alt="tnt" /></th>
-            <th style="padding: 8px; border: 1px solid #ddd;"><img src="./Images/ice.png" style="width:50px; height:50px" alt="ice_cube" /></th>
-            <th style="padding: 8px; border: 1px solid #ddd;">Score</th>
+          <tr>
+            <th>Player Name</th>
+            <th>Level</th>
+            <th>Time Left</th>
+            <th><img src="./Images/heart_live.png" style="width:50px; height:50px" alt="heart_live" /></th>
+            <th><img src="./Images/dog_down.png" style="width:50px; height:50px" alt="dog_killed" /></th>
+            <th><img src="./Images/wall_crack.png" style="width:50px; height:50px" alt="wall_crack" /></th>
+            <th><img src="./Images/tnt.png" style="width:50px; height:50px" alt="tnt" /></th>
+            <th><img src="./Images/ice.png" style="width:50px; height:50px" alt="ice_cube" /></th>
+            <th>Score</th>
           </tr>
         </thead>
         <tbody>
     `;
 
-    if (leaderboard.length === 0) {
+    if (top10.length === 0) {
       tableContent += `
         <tr>
-          <td colspan="8" style="padding: 8px; text-align: center; border: 1px solid #ddd;">
+          <td colspan="8">
             No leaderboard data available.
           </td>
         </tr>
       `;
     } else {
-      leaderboard.forEach((entry, index) => {
+      top10.forEach((entry, index) => {
         tableContent += `
           <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.username
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              CONFIG.LEVEL_NAME[entry.level]
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.time
-            }s</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.dogKilled
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${entry.wall}</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.ammunition
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.iceCubes
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">${
-              entry.score
-            }</td>
+            <td>${entry.username}</td>
+            <td>${CONFIG.LEVEL_NAME[entry.level]}</td>
+            <td>${this.formatTime(entry.time)}</td>
+            <td>${entry.lives}</td>
+            <td>${entry.dogKilled}</td>
+            <td>${entry.wall}</td>
+            <td>${entry.ammunition}</td>
+            <td>${entry.iceCubes}</td>
+            <td>${entry.score}</td>
           </tr>
         `;
       });
@@ -271,15 +353,14 @@ const helpers = {
     tableContent += `
         </tbody>
       </table>
-      <div style="margin-top: 20px; text-align: center;">
-        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Play Again</button>
-        <button onclick="helpers.resetAll()" style="padding: 10px 20px; cursor: pointer; margin-left: 10px;">Reset</button>
+      <div class="btn-container">
+        <button onclick="helpers.resetGame()" class="btn btn-red">Play Again</button>
+        <button onclick="helpers.resetAll()" class="btn btn-blue">Reset</button>
       </div>
     `;
     // Show leaderboard in modal
     elements.gameContainer.classList.add("hidden");
     elements.main.classList.add("hidden");
-    console.log(elements.leaderboard);
     elements.leaderboard.classList.remove("hidden");
     elements.leaderboard.innerHTML = tableContent;
   },
@@ -359,6 +440,7 @@ const helpers = {
     }
 
     function startCountdown() {
+      elements.leaderboard.classList.add("hidden");
       elements.main.classList.add("hidden");
       elements.countDown.classList.remove("hidden");
 
@@ -595,7 +677,7 @@ const gameFunction = {
     elements.gamePreview.appendChild(dog);
   },
   moveDogs() {
-    if (gameState.isOver || !gameState.isPlaying) return;
+    if (gameState.isOver || !gameState.isPlaying || gameState.isPaused) return;
 
     for (const dog of gameState.dogs) {
       // Randomly decide whether to move (e.g., 50% chance)
@@ -704,7 +786,7 @@ const gameFunction = {
 
   // Handle player movement
   playerMove(direction) {
-    if (gameState.isFrozen) return;
+    if (gameState.isFrozen || gameState.isPaused) return;
 
     helpers.playSound("walk");
 
@@ -751,7 +833,7 @@ const gameFunction = {
 
     // Initialize game elements
     elements.playerName.textContent = gameState.playerData.username;
-    elements.time.textContent = gameState.timer;
+    elements.time.textContent = helpers.formatTime(gameState.timer);
     gameState.ammunition = CONFIG.AMMUNITION[gameState.playerData.level];
 
     elements.ammunition.textContent = gameState.ammunition;
@@ -778,8 +860,9 @@ const gameFunction = {
 
   // Place bomb at player position
   placeBomb() {
-    if (gameState.isFrozen) return;
-    if (gameState.ammunition <= 0) return;
+    if (gameState.isFrozen || gameState.isPaused || gameState.ammunition <= 0)
+      return;
+
     helpers.playSound("drop");
 
     // Decrease ammunition
@@ -1027,14 +1110,14 @@ const gameFunction = {
   // Game timer
   startTimer() {
     const timerInterval = setInterval(() => {
-      if (gameState.isOver) {
-        clearInterval(timerInterval);
+      if (gameState.isOver || gameState.isPaused) {
+        if (gameState.isOver) clearInterval(timerInterval);
         return;
       }
 
       if (gameState.timer > 0) {
         gameState.timer--;
-        elements.time.textContent = gameState.timer;
+        elements.time.textContent = helpers.formatTime(gameState.timer);
       } else {
         gameState.isOver = true;
         clearInterval(timerInterval);
@@ -1068,8 +1151,10 @@ const gameFunction = {
       `
       <div class="gameOverView">
         <h3>${message}</h3>
-        <button onclick="helpers.showLeaderboard()">View Leaderboard</button>
-        <button onclick="helpers.saveToLeaderboard()">Save</button>
+        <div class="btn-container">
+          <button onclick="helpers.saveToLeaderboard()" class="btn btn-red">Save Scores</button>
+          <button onclick="helpers.showLeaderboard()" class="btn btn-blue">View Leaderboard</button>
+        </div>
       </div>
       `
     );
@@ -1079,39 +1164,44 @@ const gameFunction = {
 // Event listeners for keyboard input
 document.addEventListener("keydown", (event) => {
   if (gameState.isPlaying && !gameState.isOver) {
-    switch (event.key) {
-      case "w":
-      case "ArrowUp":
-        gameFunction.playerMove("up");
-        break;
-      case "s":
-      case "ArrowDown":
-        gameFunction.playerMove("down");
-        break;
-      case "d":
-      case "ArrowRight":
-        gameFunction.playerMove("right");
-        break;
-      case "a":
-      case "ArrowLeft":
-        gameFunction.playerMove("left");
-        break;
-      case " ":
-        gameFunction.placeBomb();
-        break;
+    if (event.key == "Escape") {
+      helpers.pauseGame();
+    }
+    if (!gameState.isPaused) {
+      switch (event.key) {
+        case "w":
+        case "ArrowUp":
+          gameFunction.playerMove("up");
+          break;
+        case "s":
+        case "ArrowDown":
+          gameFunction.playerMove("down");
+          break;
+        case "d":
+        case "ArrowRight":
+          gameFunction.playerMove("right");
+          break;
+        case "a":
+        case "ArrowLeft":
+          gameFunction.playerMove("left");
+          break;
+        case " ":
+          gameFunction.placeBomb();
+          break;
+      }
     }
   }
 });
 
-// function startBgMusicOnce() {
-//   const bgMusic = new Audio("./Sounds/bgMusic.mp3");
-//   bgMusic.loop = true;
-//   bgMusic.volume = 0.5;
-//   bgMusic.play();
-//   document.removeEventListener("click", startBgMusicOnce); // Remove after 1st click
-// }
+function startBgMusicOnce() {
+  const bgMusic = new Audio("./Sounds/bgMusic.mp3");
+  bgMusic.loop = true;
+  bgMusic.volume = 0.5;
+  bgMusic.play();
+  document.removeEventListener("click", startBgMusicOnce); // Remove after 1st click
+}
 
-// document.addEventListener("click", startBgMusicOnce);
+document.addEventListener("click", startBgMusicOnce);
 
 // Make game functions available globally
 window.game = gameFunction;
