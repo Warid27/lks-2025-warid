@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BOMBSKUY</title>
+    <link rel="icon" href="./Images/bomb.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div id="container">
+      <!-- Main Menu -->
+      <section id="main">
+        <div class="img-container">
+          <span alt="player logo"></span>
+          <span alt="Bomb logo"></span>
+          <span alt="dog logo"></span>
+        </div>
+        <h1 class="text-logo">
+          B<span class="bomb-logo"></span><span class="bomb-logo"></span>MSMEA
+        </h1>
+        <input
+          class="form-input"
+          type="text"
+          name="username"
+          placeholder="Input Username"
+          id="username"
+        />
+        <select class="form-input" name="level" id="level">
+          <option value="" disabled selected>Select Level</option>
+          <option value="1">Easy</option>
+          <option value="2">Medium</option>
+          <option value="3">Hard</option>
+        </select>
+        <div>
+          <button class="btn" type="button" onclick="helpers.startGame()">
+            Play
+          </button>
+          <button
+            class="btn"
+            onclick="modal.show('How To Play Game', `
+                    <ol style='padding-left: 20px; line-height: 1.5'>
+                        <li>Input Username and select a difficulty level</li>
+                        <li>Use arrow keys or WASD to move your character</li>
+                        <li>Press SPACE to place a bomb</li>
+                        <li>Blow up as many walls as possible</li>
+                        <li>Collect power-ups from destroyed walls</li>
+                        <li>Avoid being caught in explosions</li>
+                        <li>Enjoy the game!</li>
+                    </ol>
+                `)"
+          >
+            Instructions
+          </button>
+        </div>
+      </section>
+
+      <!-- Game Area -->
+      <section id="gameContainer" class="hidden">
+        <div id="gamePreview">
+          <div class="player" id="player"></div>
+        </div>
+        <div id="sidebar">
+          <h1 class="text-logo">
+            B<span class="bomb-logo"></span><span class="bomb-logo"></span>MSMEA
+          </h1>
+          <div>
+            <span class="nav-elements"
+              >Player: <span id="player-name"></span
+            ></span>
+            <span class="nav-elements">Time: <span id="time"></span></span>
+          </div>
+          <div id="heartContainer">
+            <span id="heart-1"></span>
+            <span id="heart-2"></span>
+            <span id="heart-3"></span>
+          </div>
+          <div>
+            <img src="./Images/dog_down.png" alt="Dog Killed" />
+            <span>=</span>
+            <span id="dog_killed">0</span>
+          </div>
+          <div>
+            <img src="./Images/wall_crack.png" alt="Walls Destroyed" />
+            <span>=</span>
+            <span id="wall_crack">0</span>
+          </div>
+          <div>
+            <img src="./Images/tnt.png" alt="Bombs" />
+            <span>=</span>
+            <span id="ammunition">5</span>
+          </div>
+          <div>
+            <img src="./Images/ice.png" alt="Ice Cubes" />
+            <span>=</span>
+            <span id="ice_cube">0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loading -->
+      <section id="count-down" class="hidden">
+        <span id="count-time"></span>
+      </section>
+    </div>
+
+    <script src="./vanilla.js"></script>
+  </body>
+</html>
