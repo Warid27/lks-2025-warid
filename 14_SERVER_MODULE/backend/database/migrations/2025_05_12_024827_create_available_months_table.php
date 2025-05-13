@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('installments', function (Blueprint $table) {
+        Schema::create('available_months', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('brand_id')->constrained('brand')->cascadeOnDelete()->nullable();
-            $table->string('cars');
-            $table->text('description')->nullable();
-            $table->integer('price')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('installments');
+        Schema::dropIfExists('available_months');
     }
 };

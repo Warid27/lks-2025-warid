@@ -13,9 +13,25 @@ class InstallmentController extends Controller
      */
     public function index()
     {
-        $cars = Installment::all();
-        Log::info("Installment Car" . $cars);
-        return response()->json(['cars' => $cars]);
+        $cars = Installment::with(['brands', 'available_month'])->get();
+
+        $data = $cars->map(function ($car) {
+            return [
+                'id' => $car->id,
+                'car' => $car->cars,
+                'brand' => $car->brands->brand ?? null,
+                'price' => $car->price,
+                'description' => $car->description,
+                'available_month' => $car->available_month->map(function ($month) {
+                    return [
+                        'month' => $month->month,
+                        'description' => $month->description,
+                        'nominal' => $month->nominal,
+                    ];
+                }),
+            ];
+        });
+        return response()->json(['cars' => $data]);
     }
 
     /**
@@ -26,9 +42,6 @@ class InstallmentController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         //
@@ -37,9 +50,29 @@ class InstallmentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Installment $installment)
+    public function show($id)
     {
-        //
+
+        $car = Installment::with(['brands', 'available_month'])->where('id', $id)->first();
+
+        if (!$car) {
+            return response()->json(['message' => 'Car not found'], 404);
+        }
+        $data = [
+            'id' => $car->id,
+            'car' => $car->cars,
+            'brand' => $car->brands->brand ?? null,
+            'price' => $car->price,
+            'description' => $car->description,
+            'available_month' => $car->available_month->map(function ($month) {
+                return [
+                    'month' => $month->month,
+                    'description' => $month->description,
+                    'nominal' => $month->nominal,
+                ];
+            }),
+        ];
+        return response()->json(['car' => $data]);
     }
 
     /**

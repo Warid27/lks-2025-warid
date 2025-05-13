@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class User extends Authenticatable
@@ -22,11 +21,6 @@ class User extends Authenticatable
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -35,8 +29,7 @@ class User extends Authenticatable
 
     public function validator()
     {
-        return $this->hasMany(Validator::class);
-    }
+        return $this->hasOne(Validator::class, 'user_id', 'id');    }
 
     public function tokens()
     {

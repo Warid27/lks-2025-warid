@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\validation;
+use App\Models\Validation;
+use App\Models\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log as Log;
-use Illuminate\Validation\ValidationException;
 use App\Models\JobCategory;
 
 class ValidationController extends Controller
@@ -15,15 +15,7 @@ class ValidationController extends Controller
      */
     public function index()
     {
-        return validation::all();
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return Validation::all();
     }
 
     /**
@@ -42,55 +34,69 @@ class ValidationController extends Controller
         $societyId = auth()->user()->id;
         $jobCategoryId = JobCategory::where("id", $validated['job'])->first();
 
-       if(!$jobCategoryId){
-        return response()->json([
-            "message" => "Job Category Not Found"
-        ], 400);
-       }
+        if (!$jobCategoryId) {
+            return response()->json([
+                "message" => "Job Category Not Found"
+            ], 400);
+        }
         $reqBody = [
             "society_id" => $societyId,
             "job_category_id" => $validated['job'],
             "job_position" => $validated["job_description"],
             "income" => $validated["income"],
             "reason_accepted" => $validated["reason_accepted"],
+            "validator_id" => null,
+            "status" => 'pending'
         ];
-        Log::info("REQBODY");
-        validation::create($reqBody);
+
+        Validation::create($reqBody);
 
         return response()->json([
-            "message" => "Request data validation sent"
+            "message" => "Request data Validation sent"
         ], 200);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(validation $validation)
+    public function show(Validation $validation)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(validation $validation)
+    public function update(Request $request, $id)
     {
-        //
+        $validated = $request->validate([
+            'validator_notes' => 'required|string',
+            'work_experience' => 'required|string',
+            'status' => 'required|in:accepted,rejected',
+        ]);
+
+        $user = auth()->user();
+        $validation = Validation::find($id);
+        $validator_notes = $user->validator->name . ": " . $validated["validator_notes"];
+
+        Log::info("USER: {$user}");
+        Log::info("VALIDATION: {$validation}");
+
+        $validation->update([
+            "validator_notes" => $validator_notes,
+            "status"=> $validated["status"],
+            "validator_id" => $user->validator->id,
+            "work_experience" => $validated["work_experience"],
+        ]);
+
+        return response()->json([
+            "message" => "Validation data updated"
+        ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, validation $validation)
+    public function destroy(Validation $validation)
     {
-        //
-    }
+        $validation->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(validation $validation)
-    {
-        //
+        return response()->json([
+            "message" => "Validation data deleted"
+        ], 200);
     }
 }
